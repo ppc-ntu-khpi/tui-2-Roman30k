@@ -1,4 +1,4 @@
-package com.mybank.tui;
+//package com.mybank.tui;
 
 import com.mybank.domain.Bank;
 import com.mybank.domain.CheckingAccount;
@@ -12,6 +12,11 @@ import org.jline.reader.*;
 import org.jline.reader.impl.completer.*;
 import org.jline.utils.*;
 import org.fusesource.jansi.*;
+
+import com.mybank.data.DataSource;
+import java.util.Locale;
+import java.io.IOException;
+import com.mybank.reporting.CustomerReport;
 
 /**
  * Sample application to show how jLine can be used.
@@ -39,7 +44,7 @@ public class CLIdemo {
     private String[] commandsList;
 
     public void init() {
-        commandsList = new String[]{"help", "customers", "customer", "exit"};
+        commandsList = new String[]{"help", "customers", "customer", "report", "exit"};
     }
 
     public void run() {
@@ -73,7 +78,7 @@ public class CLIdemo {
                         System.out.println(Bank.getCustomer(i).getLastName() + "\t\t" + Bank.getCustomer(i).getFirstName() + "\t\t$" + Bank.getCustomer(i).getAccount(0).getBalance());
                     }
                 } else {
-                    System.out.println(ANSI_RED+"Your bank has no customers!"+ANSI_RESET);
+                    System.out.println(ANSI_RED + "Your bank has no customers!" + ANSI_RESET);
                 }
 
             } else if (line.indexOf("customer") != -1) {
@@ -84,24 +89,27 @@ public class CLIdemo {
                         if (strNum != null) {
                             custNo = Integer.parseInt(strNum);
                         }
-                    }                    
+                    }
                     Customer cust = Bank.getCustomer(custNo);
                     String accType = cust.getAccount(0) instanceof CheckingAccount ? "Checkinh" : "Savings";
-                    
+
                     AttributedStringBuilder a = new AttributedStringBuilder()
                             .append("\nThis is detailed information about customer #")
                             .append(Integer.toString(custNo), AttributedStyle.BOLD.foreground(AttributedStyle.RED))
                             .append("!");
 
                     System.out.println(a.toAnsi());
-                    
+
                     System.out.println("\nLast name\tFirst Name\tAccount Type\tBalance");
                     System.out.println("-------------------------------------------------------");
-                    System.out.println(cust.getLastName() + "\t\t" + cust.getFirstName() + "\t\t" + accType + "\t$" + cust.getAccount(0).getBalance());
+                    System.out.println(cust.getLastName() + "\t\t" + cust.getFirstName() + "\t\t" + accType + "\t\t$" + cust.getAccount(0).getBalance());
                 } catch (Exception e) {
                     System.out
-                        .println(ANSI_RED + "ERROR! Wrong customer number!" + ANSI_RESET);
+                            .println(ANSI_RED + "ERROR! Wrong customer number!" + ANSI_RESET);
                 }
+            } else if ("report".equals(line)) {
+                CustomerReport rep = new CustomerReport();
+                rep.generateReport();
             } else if ("exit".equals(line)) {
                 System.out.println("Exiting application");
                 return;
@@ -114,6 +122,7 @@ public class CLIdemo {
         AnsiConsole.systemUninstall();
     }
 
+
     private void printWelcomeMessage() {
         System.out
                 .println("\nWelcome to " + ANSI_GREEN + " MyBank Console Client App" + ANSI_RESET + "! \nFor assistance press TAB or type \"help\" then hit ENTER.");
@@ -122,8 +131,9 @@ public class CLIdemo {
 
     private void printHelp() {
         System.out.println("help\t\t\t- Show help");
-        System.out.println("customer\t\t- Show list of customers");
+        System.out.println("customers\t\t- Show list of customers");
         System.out.println("customer \'index\'\t- Show customer details");
+        System.out.println("report\t\t\t- Generate report");
         System.out.println("exit\t\t\t- Exit the app");
 
     }
@@ -142,11 +152,13 @@ public class CLIdemo {
     }
 
     public static void main(String[] args) {
+        Locale.setDefault(new Locale("en", "US"));
 
-        Bank.addCustomer("John", "Doe");
-        Bank.addCustomer("Fox", "Mulder");
-        Bank.getCustomer(0).addAccount(new CheckingAccount(2000));
-        Bank.getCustomer(1).addAccount(new SavingsAccount(1000, 3));
+        try {
+            new DataSource("./data/test.dat").loadData();
+        } catch (IOException e) {
+            System.out.println("Помилка завантаження даних");
+        }
 
         CLIdemo shell = new CLIdemo();
         shell.init();
